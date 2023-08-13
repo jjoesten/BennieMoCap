@@ -1,0 +1,5 @@
+# FOLDER / DIRECTORY NAMES
+BASE_DATA_FOLDER_NAME = "benniemocap_data"
+
+
+# FILENAMES
