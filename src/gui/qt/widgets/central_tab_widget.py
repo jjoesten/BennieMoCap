@@ -3,7 +3,8 @@ logger = logging.getLogger(__name__)
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QTabWidget
+    QTabWidget,
+    QWidget
 )
 
 from src.gui.qt.widgets.home_widget import HomeWidget
@@ -11,6 +12,8 @@ from src.gui.qt.widgets.home_widget import HomeWidget
 class CentralTabWidget(QTabWidget):
     def __init__(
         self,
+        directory_view_widget: QWidget,
+        active_session_info_widget: QWidget,
         # TODO: widgets to be included in this tab widget
         home_widget: HomeWidget,
         parent=None
@@ -19,14 +22,14 @@ class CentralTabWidget(QTabWidget):
 
         # Widgets
         self._home_widget = home_widget
+        self._directory_view_widget = directory_view_widget
+        self._active_session_info_widget = active_session_info_widget
         
         # Create Tabs
-        self._create_home_tab(self)
+        self.addTab(self._home_widget, "Home")
+        self.addTab(self._directory_view_widget, "Directory View")
+        self.addTab(self._active_session_info_widget, "Active Session Info")
 
-
-
-    def _create_home_tab(self, tab_widget: QTabWidget):
-        logger.info("Creating Home Tab")
-        tab_widget.addTab(self._home_widget, "Home")
+        
 
         

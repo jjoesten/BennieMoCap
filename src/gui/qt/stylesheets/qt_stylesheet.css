@@ -1,0 +1,75 @@
+* {
+  font-family: "Dosis", sans-serif;
+  font-size: 14px;
+  color: #333333; }
+
+QObject {
+  color: #1d1d1f;
+  background-color: #f5f5f7; }
+
+QMainWindow {
+  background-color: #e0e0e0; }
+
+QStatusBar {
+  color: #1d1d1f; }
+
+QTabWidget::pane {
+  border: 1px solid #f5f5f7;
+  background: #eeeeee;
+  padding: 5px; }
+
+QTabWidget::pane::selection {
+  border-top: 1px solid #333333; }
+
+QTabBar::tab {
+  border: 1px solid #1d1d1f;
+  padding: 5px;
+  padding-right: 15px;
+  padding-left: 15px;
+  color: #1d1d1f;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 5px;
+  background: #f5f5f7;
+  margin-bottom: -5px;
+  font-weight: bolder;
+  font-size: 16px; }
+
+QTabBar::tab:selected,
+QTabBar::tab::hover {
+  background: #424242;
+  color: #f5f5f7;
+  border-color: #1d1d1f; }
+
+QPushButton {
+  border-radius: 10px;
+  color: #1d1d1f;
+  border: 2px solid #67bcc0;
+  background-color: #dbeef0;
+  padding: 5px; }
+
+QPushButton:disabled {
+  background-color: #eeeeee;
+  border: 2px solid #9e9e9e;
+  color: #333333; }
+
+QPushButton:hover {
+  border: 2px solid #1d1d1f;
+  background-color: #67bcc0; }
+
+QPushButton:pressed {
+  background-color: #53d4dc; }
+
+QLabel {
+  font-size: 14px;
+  color: #333333; }
+  QTreeView QLabel {
+    color: #1d1d1f; }
+
+QLable:disabled {
+  color: #e0e0e0; }
+
+LogViewWidget {
+  background-color: #263238;
+  color: #f5f5f7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 12px; }
