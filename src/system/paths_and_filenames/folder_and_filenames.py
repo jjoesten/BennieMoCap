@@ -23,3 +23,4 @@ MOST_RECENT_SESSION_TOML_FILENAME = "most_recent_session.toml"
 
 # logo
 PATH_TO_LOGO_SVG = Path(src.__file__).parent / "assets/logo/BennieLogo.svg"
+PATH_TO_LOGO_PNG = Path(src.__file__).parent / "assets/logo/BennieLogoBlackFill.png"

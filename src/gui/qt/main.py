@@ -10,7 +10,7 @@ from src.gui.qt.utilities.get_qt_app import get_qt_app
 
 from src.system.paths_and_filenames.path_getters import get_data_folder_path
 
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
+# logging.getLogger("matplotlib").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 def sigint_handler(*args):

@@ -37,7 +37,7 @@ def _extract_video_duration_ffmpeg(file_pathstring: str):
     video_duration = float(extract_duration_subprocess.stdout)
     return video_duration
 
-def _extract_video_fps_ffmpeg(file_pathstring: str):
+def _extract_video_fps_ffmpeg(file_pathstring: str) -> float:
     debugpy.debug_this_thread()
     extract_fps_subprocess = subprocess.run(
         [
@@ -59,6 +59,32 @@ def _extract_video_fps_ffmpeg(file_pathstring: str):
     numerator, denominator = cleaned.split("/")
     video_fps = float(int(numerator)/int(denominator))
     return video_fps
+
+def extract_video_audio_sample_rate(file_pathstring: str):
+    debugpy.debug_this_thread()
+    extract_sample_rate_subprocess = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "a",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            "-show_entries",
+            "stream=sample_rate",
+            file_pathstring,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    try:
+        sample_rate = float(extract_sample_rate_subprocess.stdout)
+        return sample_rate
+    except Exception as e:
+        logger.error("Unable to determine audio sample rate. Video file may not have audio track.")
+        logger.exception(e)
+        raise Exception(e)
 
 def create_video_info_dict(
         video_filepath_list: list

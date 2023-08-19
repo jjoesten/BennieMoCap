@@ -25,6 +25,7 @@ from src.gui.qt.stylesheets.css_file_watcher import CSSFileWatcher, apply_css_st
 from src.gui.qt.stylesheets.scss_file_watcher import SCSSFileWatcher
 
 from src.gui.qt.utilities.get_qt_app import get_qt_app
+from src.gui.qt.utilities.update_most_recent_session_toml import update_most_recent_session_toml
 
 from src.gui.qt.widgets.active_session_info_widget import ActiveSessionInfoWidget
 from src.gui.qt.widgets.central_tab_widget import CentralTabWidget
@@ -41,6 +42,7 @@ from src.system.paths_and_filenames.path_getters import (
     get_sessions_folder_path,
     get_scss_stylesheet_path,
     get_css_stylesheet_path,
+    create_new_session_folder,
 )
 
 from src.utilities.remove_empty_directories import remove_empty_directories
@@ -80,7 +82,7 @@ class MainWindow(QMainWindow):
         # self.setCentralWidget(dummy_widget)
 
         # CSS Styling
-        self._css_file_watcher = self._setup_stylesheet()
+        # self._css_file_watcher = self._setup_stylesheet()
 
         # Menu Bar
         self._menu_bar = MenuBar(actions=self._actions, parent=self)
@@ -204,22 +206,33 @@ class MainWindow(QMainWindow):
     def handle_start_new_session_action(self):
         logger.info("Starting new session by importing videos")
 
-        import_videos_path = QFileDialog.getExistingDirectory(
-            self,
-            "Select a folder containing motion capture session videos. One video file per camera in the capture area.",
-            str(Path.home())
-        )
-        if len(import_videos_path) == 0:
-            logger.info("User cancelled importing videos")
-            return
+        # create new session folder
+        session_path = create_new_session_folder()
+        # create session info model
+        session_info_model = SessionInfoModel(session_path)
+        update_most_recent_session_toml(session_info_model=session_info_model)
+
+
+
+        import_videos_wizard = ImportVideosWizard()
+        import_videos_wizard.exec()
+
+        # import_videos_path = QFileDialog.getExistingDirectory(
+        #     self,
+        #     "Select a folder containing motion capture session videos. One video file per camera in the capture area.",
+        #     str(Path.home())
+        # )
+        # if len(import_videos_path) == 0:
+        #     logger.info("User cancelled importing videos")
+        #     return
         
-        import_video_window = ImportVideosWizard(
-            parent=self,
-            import_path=import_videos_path,
-            kill_thread_event=self._kill_thread_event
-        )
-        import_video_window.video_import_finished.connect(self._handle_import_videos)
-        import_video_window.exec()
+        # import_video_window = ImportVideosWizard(
+        #     parent=self,
+        #     import_path=import_videos_path,
+        #     kill_thread_event=self._kill_thread_event
+        # )
+        # import_video_window.video_import_finished.connect(self._handle_import_videos)
+        # import_video_window.exec()
         # TODO: Implement handle_start_new_session_action
 
 

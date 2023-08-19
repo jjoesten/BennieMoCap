@@ -18,6 +18,7 @@ from src.system.paths_and_filenames.folder_and_filenames import (
     STYLESHEET_FOLDER_PATH_FROM_ROOT,
     QT_SCSS_FILENAME,
     QT_CSS_FILENAME,
+    SYNCHRONIZED_VIDEOS_FOLDER_NAME,
 )
 
 data_folder_path: Path = None
@@ -68,7 +69,9 @@ def default_session_name(tag: str = None) -> str:
 def create_new_session_folder() -> Path:
     global session_folder_path
     if session_folder_path is None:
+        # create session folder
         session_folder_path = Path(get_sessions_folder_path()) / default_session_name()
+        session_folder_path.mkdir(exist_ok=True, parents=True)
     return session_folder_path
 
 def get_sessions_folder_path(create_folder: bool = True) -> Path:
@@ -98,6 +101,12 @@ def get_most_recent_session_path(subfolder:str = None):
         return subfolder_path
     else:
         return session_path
+    
+def get_synchronzied_videos_folder_path(session_path: Union[str, Path], create_folder: bool = True) -> Path:
+    path = Path(session_path) / SYNCHRONIZED_VIDEOS_FOLDER_NAME
+    if create_folder:
+        path.mkdir(exist_ok=True, parents=True)
+    return path
 
 def get_logs_info_and_settings_folder_path(create_folder: bool = True) -> Path:
     path = Path(get_data_folder_path()) / LOGS_INFO_AND_SETTINGS_FOLDER_NAME
