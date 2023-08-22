@@ -13,6 +13,8 @@ from src.data_layer.session_models.post_processing_parameter_models import PostP
 from src.system.paths_and_filenames.folder_and_filenames import SESSION_PARAMETERS_JSON_FILENAME
 from src.utilities.dict import save_dictionary_to_json
 
+import debugpy
+
 class ProcessMotionCaptureDataThreadWorker(QThread):
     finished = pyqtSignal()
     in_progress = pyqtSignal(object)
@@ -25,6 +27,7 @@ class ProcessMotionCaptureDataThreadWorker(QThread):
         self._process = multiprocessing.Process(target=process_session_folder, args=(self._post_processing_parameters, self._kill_event, self._queue))
 
     def run(self):
+        debugpy.debug_this_thread()
         logger.info(f"Beginning processing of motion capture data with parameters: {self._post_processing_parameters.__dict__}")
         self._kill_event.clear()
 

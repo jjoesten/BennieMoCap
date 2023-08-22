@@ -27,6 +27,8 @@ from src.gui.qt.widgets.control_panel.parameter_groups.create_parameter_groups i
     SKIP_BUTTERWORTH_FILTER_NAME
 )
 
+from src.gui.qt.workers.process_motion_capture_data_thread_worker import ProcessMotionCaptureDataThreadWorker
+
 class ProcessMotionCaptureDataPanel(QWidget):
     processing_finished = pyqtSignal()
 

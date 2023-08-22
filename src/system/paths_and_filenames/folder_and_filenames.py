@@ -22,6 +22,9 @@ QT_SCSS_FILENAME = "qt_stylesheet.scss"
 QT_CSS_FILENAME = "qt_stylesheet.css"
 MOST_RECENT_SESSION_TOML_FILENAME = "most_recent_session.toml"
 SESSION_PARAMETERS_JSON_FILENAME = "session_parameters.json"
+LAST_SUCCESSFUL_CALIBRATION_FILENAME = "last_successful_calibration.toml"
+MEDIAPIPE_2D_NPY_FILENAME = "mediapipe2dData_numCams_numFrames_numTrackedPoints_pixelXYZ.npy"
+MEDIAPIPE_BODY_WORLD_FILENAME = "mediapipeBodyWorld_numCams_numFrames_numTrackedPoitnt_XYZ.npy"
 
 
 # logo
