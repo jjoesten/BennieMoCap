@@ -109,6 +109,7 @@ class SessionStatusChecker:
 
     def check_videos_framerate_status(self) -> bool:
         try:
+            # TODO: Test this, doesn't seem to be working
             test_video_framerates(self._session_info_model.synchronized_videos_folder_path)
             return True
         except AssertionError:

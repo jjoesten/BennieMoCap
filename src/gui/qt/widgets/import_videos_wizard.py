@@ -5,10 +5,13 @@ from pathlib import Path
 from typing import Union
 import threading
 import os
+from enum import IntEnum
+from shutil import copyfile
 
 from pyqtgraph.parametertree import Parameter, ParameterTree
 
-from PyQt6.QtCore import pyqtSignal, QAbstractTableModel
+from PyQt6 import QtCore
+from PyQt6.QtCore import pyqtSignal, QAbstractTableModel, pyqtProperty, QTimer
 from PyQt6.QtGui import QFileSystemModel, QPixmap, QStandardItemModel, QStandardItem
 from PyQt6.QtWidgets import (
     QWizard,
@@ -24,37 +27,71 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QDialog,
     QCheckBox,
-    QHBoxLayout
+    QHBoxLayout,
 )
 
 from src.gui.qt.workers.match_framerate_thread_worker import MatchFramerateThreadWorker
 from src.gui.qt.workers.synchronize_videos_thread_worker import SynchronizeVideosThreadWorker
 
-from src.system.paths_and_filenames.folder_and_filenames import SYNCHRONIZED_VIDEOS_FOLDER_NAME, PATH_TO_LOGO_PNG
-from src.system.paths_and_filenames.path_getters import get_sessions_folder_path, create_new_session_folder, home_dir
-from src.utilities.video import get_video_paths
+from src.system.paths_and_filenames.folder_and_filenames import SYNCHRONIZED_VIDEOS_FOLDER_NAME, PATH_TO_LOGO_PNG, FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME
+from src.system.paths_and_filenames.path_getters import (
+    get_sessions_folder_path, 
+    create_new_session_folder, 
+    home_dir, 
+    get_most_recent_session_path, 
+    get_synchronzied_videos_folder_path,
+    get_framerate_matched_videos_folder_path
+)
+
+from src.gui.qt.widgets.spinner_widget import QtWaitSpinner
 
 from src.data_layer.session_models.video_model import VideoModel
 
+from src.utilities.video import change_framerate_ffmpeg, convert_video_to_mp4
+from src.utilities.video_sync import synchronize_videos_from_audio
+
+# from skelly_synchronize.skelly_synchronize import synchronize_videos_from_audio
+
 NO_FILES_FOUND_STRING = "No '.mp4' video files found"
 
+class Pages(IntEnum):
+    Page_Intro = 0
+    Page_Import = 1
+    Page_Framerate = 2
+    Page_Synchronize = 3
+    Page_Conclusion = 4
 class ImportVideosWizard(QWizard):
+
+
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
-        # style = self.wizardStyle()
-        # self.setWizardStyle(QWizard.WizardStyle.AeroStyle)
-        # style = self.wizardStyle()
-
         self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
 
+        self._import_video_paths: list[str] = []
+
+        self._pages = [
+            IntroPage(),
+            SelectVideosPage(),
+            FramerateMatchPage(),
+            SynchronizationPage(),
+            ConclusionPage()
+        ]
+        for page in self._pages:
+            self.addPage(page)
+        self.setStartId(Pages.Page_Intro)
+
         # Add pages
-        self.addPage(IntroPage())
-        self.addPage(SelectVideosPage())
-        self.addPage(SynchronizationPage())
-        self.addPage(ConclusionPage())
+        # self.addPage(IntroPage())
+        # self.addPage(SelectVideosPage())
+        # self.addPage(SynchronizationPage())
+        # self.addPage(ConclusionPage())
 
         self.setWindowTitle("Import Videos")
+
+    @property
+    def import_video_paths(self) -> list[str]:
+        return self._import_video_paths
 
     # def accept(self):
 
@@ -75,14 +112,17 @@ class IntroPage(QWizardPage):
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(label)
 
+    def nextId(self) -> int:
+        return Pages.Page_Import
+
 class SelectVideosPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setTitle("Select Videos")
 
-        self._import_video_path = []
-        self._session_folder = create_new_session_folder()
-        
+        self._import_video_paths = []
+        self._video_model_list: list[VideoModel] = []
+        self._session_folder = create_new_session_folder()        
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -90,15 +130,13 @@ class SelectVideosPage(QWizardPage):
         self._import_videos_button = QPushButton("Import Videos")
         self._import_videos_button.clicked.connect(self._open_file_dialog)
         
-        self._import_videos_table_view = QTreeView(self)
+        self._import_videos_tree_view = QTreeView(self)
         self._standard_model = QStandardItemModel(self)
         self._standard_model.setHorizontalHeaderLabels(["","FPS","Sample Rate","Duration","Resolution","Size(MB)"])
-
-        self._import_videos_table_view.setModel(self._standard_model)
+        self._import_videos_tree_view.setModel(self._standard_model)
         # self._import_videos_table_view.expandAll()
 
-
-        layout.addWidget(self._import_videos_table_view)
+        layout.addWidget(self._import_videos_tree_view)
         layout.addWidget(self._import_videos_button)
         
 
@@ -110,24 +148,133 @@ class SelectVideosPage(QWizardPage):
         self._video_file_paths = [str(path) for path in import_file_paths[0]]
         
         # create model, get details about the videos to be imported
-        self._video_model_list: list[VideoModel] = []
         for video_path in self._video_file_paths:
             self._video_model_list.append(VideoModel(video_path=video_path))
+        # add video_model_list as wizard property
+        self.registerField("import_video_model_list", self, "video_model_list")
 
-        
+        # add to tree view
         item = self._standard_model.invisibleRootItem()
         for video_model in self._video_model_list:
             item.appendRow(self._prepare_row(video_model.filename, video_model.fps, video_model.audio_sample_rate, video_model.duration, video_model.resolution, video_model.size))
-        self._standard_model.dataChanged.emit()
-
-
-
         
+
+    def nextId(self) -> int:
+        # all videos have same framerate
+        # i = self._video_model_list[0].fps
+        # if all(video.fps == i for video in self._video_model_list):
+        #     return Pages.Page_Synchronize
+        # else:
+        return Pages.Page_Framerate
+
+    @pyqtProperty(list)
+    def video_model_list(self):
+        return self._video_model_list
+    @video_model_list.setter
+    def video_model_list(self, video_model_list):
+        self._video_model_list = video_model_list
+
+class FramerateMatchPage(QWizardPage):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setTitle("Match Framerates")
+
+        self._framerate_matched_video_model_list: list[VideoModel] = []
+
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+
+        # setup ui
+        # self._spinner = QtWaitSpinner(self, roundness=100.0, fade=70.0, radius=12, lines=20, line_length=16, line_width=3, speed=1.0, color=(213, 189, 136))
+        self._spinner = QtWaitSpinner(self, center_on_parent=False)
+        self._layout.addWidget(self._spinner)
+
+        self._import_videos_tree_view = QTreeView(self)
+        self._standard_model = QStandardItemModel(self)
+        self._standard_model.setHorizontalHeaderLabels(["","FPS","Sample Rate","Duration","Resolution","Size(MB)"])
+        self._import_videos_tree_view.setModel(self._standard_model)
+        self._layout.addWidget(self._import_videos_tree_view)
+
+
+
+        # match framerate and import videos
+        # self.match_framerate_thread_worker = MatchFramerateThreadWorker(input_file_list=self)
+
+    def initializePage(self) -> None:       
+
+        self._spinner.start()
+        self._spinner.show()
+
+        QTimer.singleShot(10, self._start_page_work)
+
+    def _start_page_work(self):
+        self._import_video_model_list = self.field("import_video_model_list")
+        self._match_framerates()
+
+    def _match_framerates(self) -> None:
+        new_video_paths = []
+        min_fps = min([video_model.fps for video_model in self._import_video_model_list])
+        for video_model in self._import_video_model_list:
+            output_filename = f"{video_model.filename}"
+            output_path = get_framerate_matched_videos_folder_path(get_most_recent_session_path()) / output_filename
+            if video_model.fps > min_fps:
+                change_framerate_ffmpeg(str(video_model.path), str(output_path), min_fps)
+            else:
+                copyfile(str(video_model.path), str(output_path))
+            # convert to mp4
+            if Path(output_filename).suffix.lower() != ".mp4":
+                convert_video_to_mp4(str(output_path))
+            
+            new_video_paths.append(output_path)
+
+        # add new files to treeview
+        for video_path in new_video_paths:
+            self._framerate_matched_video_model_list.append(VideoModel(video_path=video_path))
+        item = self._standard_model.invisibleRootItem()
+        for video_model in self._framerate_matched_video_model_list:
+            item.appendRow(self._prepare_row(video_model.filename, video_model.fps, video_model.audio_sample_rate, video_model.duration, video_model.resolution, video_model.size))
+    
+    def _prepare_row(self, filename, fps, sampling_rate, duration, resolution, size):
+        return [QStandardItem(filename), QStandardItem(str(fps)), QStandardItem(str(sampling_rate)), QStandardItem(str(duration)), QStandardItem(resolution), QStandardItem(f"{size} MB")] 
+                
+
+
+
 
 class SynchronizationPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setTitle("Synchronization")
+
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+
+        self._spinner = QtWaitSpinner(self, center_on_parent=False)
+        self._layout.addWidget(self._spinner)
+
+    def initializePage(self) -> None:
+        self._spinner.start()
+        self._spinner.show()
+        QTimer.singleShot(10, self._start_page_work)
+
+    def _start_page_work(self) -> None:
+        logger.debug("Starting video synchronization")
+        
+        fr_video_folder_path = get_framerate_matched_videos_folder_path(get_most_recent_session_path())
+        sync_video_folder_path = get_synchronzied_videos_folder_path(get_most_recent_session_path())
+
+
+        try:
+            output_folder_path = synchronize_videos_from_audio(raw_video_folder_path=fr_video_folder_path, synchronized_video_folder_path=sync_video_folder_path, create_debug_plots_bool=True)
+        except Exception as e:
+            logger.exception("Something when wrong while synchronizing videos")
+            logger.exception(e)
+
+        # delete fr_videos
+
+        
+    
+
 
 class ConclusionPage(QWizardPage):
     def __init__(self, parent=None):

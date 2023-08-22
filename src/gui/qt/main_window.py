@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.data_layer.session_models.session_info_model import SessionInfoModel
+from src.data_layer.session_models.post_processing_parameter_models import PostProcessingParameterModel
 
 from src.gui.qt.actions_and_menus.actions import Actions
 from src.gui.qt.actions_and_menus.menu_bar import MenuBar
@@ -34,6 +35,7 @@ from src.gui.qt.widgets.directory_view_widget import DirectoryViewWidget
 from src.gui.qt.widgets.home_widget import HomeWidget
 from src.gui.qt.widgets.import_videos_wizard import ImportVideosWizard
 from src.gui.qt.widgets.log_view_widget import LogViewWidget
+from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     PATH_TO_LOGO_SVG
@@ -82,7 +84,7 @@ class MainWindow(QMainWindow):
         # self.setCentralWidget(dummy_widget)
 
         # CSS Styling
-        # self._css_file_watcher = self._setup_stylesheet()
+        self._css_file_watcher = self._setup_stylesheet()
 
         # Menu Bar
         self._menu_bar = MenuBar(actions=self._actions, parent=self)
@@ -159,10 +161,22 @@ class MainWindow(QMainWindow):
     def _create_control_panel_widget(self, log_update: Callable) -> ControlPanelWidget:
 
         # TODO: add controls to control panel widget
+        self._process_motion_capture_data_panel = ProcessMotionCaptureDataPanel(
+            session_processing_parameters=PostProcessingParameterModel(),
+            get_active_session_info=self._active_session_info_widget.get_active_session_info,
+            kill_thread_event=self._kill_thread_event,
+            log_update=log_update
+        )
+        self._process_motion_capture_data_panel.processing_finished.connect(self._handle_processing_finished_signal)
 
         return ControlPanelWidget(
+            process_motion_capture_data_panel=self._process_motion_capture_data_panel,
             parent=self
         )
+    
+    def _handle_processing_finished_signal(self):
+        # TODO: Implement _handle_processing_finished_signal
+        pass
     
     def _handle_import_videos(self, video_paths: List[str], save_folder: Path):
         # save_folder.mkdir(parents=True, exist_ok=True)
@@ -214,7 +228,7 @@ class MainWindow(QMainWindow):
 
 
 
-        import_videos_wizard = ImportVideosWizard()
+        import_videos_wizard = ImportVideosWizard(parent=self)
         import_videos_wizard.exec()
 
         # import_videos_path = QFileDialog.getExistingDirectory(
@@ -237,8 +251,14 @@ class MainWindow(QMainWindow):
 
 
     def handle_load_existing_session_action(self):
-        # TODO: Implement handle_load_existing_session_action
-        pass
+        logger.info("Opening 'Load Existing Session' dialog")
+        path = QFileDialog.getExistingDirectory(self, "Select a session folder", str(get_sessions_folder_path()))
+        if len(path) == 0:
+            logger.info("User cancelled 'Load Exisiting Session' dialog")
+            return
+        logger.info(f"User selected session path: {path}")
+        self._active_session_info_widget.set_active_session(session_folder_path=path)
+        self._central_tab_widget.setCurrentIndex(2)
 
     def kill_threads_and_processes(self):
         logger.info("Killing running threads and processes")

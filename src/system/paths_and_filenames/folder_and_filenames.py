@@ -7,6 +7,8 @@ BASE_DATA_FOLDER_NAME = "benniemocap_data"
 SESSIONS_FOLDER_NAME = "sessions"
 CALIBRATIONS_FOLDER_NAME = "calibrations"
 SYNCHRONIZED_VIDEOS_FOLDER_NAME = "synchronized_videos"
+FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME = "fr"
+AUDIO_FOLDER_NAME = "audio_files"
 ANNOTATED_VIDEOS_FOLDER_NAME = "annotated_videos"
 OUTPUT_DATA_FOLDER_NAME = "output_data"
 RAW_DATA_FOLDER_NAME = "raw_data"
@@ -19,6 +21,7 @@ STYLESHEET_FOLDER_PATH_FROM_ROOT = "gui/qt/stylesheets"
 QT_SCSS_FILENAME = "qt_stylesheet.scss"
 QT_CSS_FILENAME = "qt_stylesheet.css"
 MOST_RECENT_SESSION_TOML_FILENAME = "most_recent_session.toml"
+SESSION_PARAMETERS_JSON_FILENAME = "session_parameters.json"
 
 
 # logo
