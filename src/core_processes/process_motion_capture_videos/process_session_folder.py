@@ -9,7 +9,14 @@ import pandas as pd
 from src.system.logging.queue_logger import DirectQueueHandler
 from src.system.logging.configure import log_view_format_string
 
+
+from src.system.paths_and_filenames.folder_and_filenames import (
+    RAW_DATA_FOLDER_NAME
+)
+
 from src.data_layer.session_models.post_processing_parameter_models import PostProcessingParameterModel
+
+from src.core_processes.processing_2d.mediapipe.mediapipe_skeleton_detector import MediapipeSkeletonDetector
 
 def process_session_folder(
     session_processing_parameter_model: PostProcessingParameterModel,
@@ -18,7 +25,7 @@ def process_session_folder(
     use_tqdm: bool = True
 ):
     if queue:
-        handler = DirectQueueHandler(queue)
+        handler = DirectQueueHandler(queue)  
         handler.setFormatter(logging.Formatter(fmt=log_view_format_string, datefmt="%Y-%m-%dT%H:%M:%S"))
         logger.addHandler(handler)
 
@@ -38,4 +45,7 @@ def process_session_folder(
             return
     else:
         logger.info("Detecting 2D skeletons")
-        # TODO: HERE!!!
+        mediapipe_skeleton_detector = MediapipeSkeletonDetector(parameter_model=session.mediapipe_parameters_model, use_tqdm=use_tqdm)
+
+        mediapipe_skeleton_detector.process_folder(video_folder_path=session.session_info_model.synchronized_videos_folder_path,
+                                                   output_data_folder_path=session.session_info_model.output_data_folder_path / RAW_DATA_FOLDER_NAME)

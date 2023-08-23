@@ -82,6 +82,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         logger.debug("Process motion capture data process finished.")
         self.processing_finished.emit()
 
+
     def _launch_process_mocap_data_thread_worker(self):
         logger.debug("Launching process motion capture data")
         session_parameter_model = self._create_session_parameter_model()
@@ -99,7 +100,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         self._process_mocap_data_thread_worker.start()
         self._process_mocap_data_thread_worker.finished.connect(self._handle_finished_signal)
 
-        # TODO: implement _launch_process_mocap_data_thread_worker
+        
 
     def _create_session_parameter_model(self) -> PostProcessingParameterModel:
         parameter_model = extract_parameter_model_from_parameter_tree(parameter_object=self._parameter_group)
