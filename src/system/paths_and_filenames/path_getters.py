@@ -18,6 +18,8 @@ from src.system.paths_and_filenames.folder_and_filenames import (
     STYLESHEET_FOLDER_PATH_FROM_ROOT,
     QT_SCSS_FILENAME,
     QT_CSS_FILENAME,
+    SYNCHRONIZED_VIDEOS_FOLDER_NAME,
+    FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME
 )
 
 data_folder_path: Path = None
@@ -68,7 +70,9 @@ def default_session_name(tag: str = None) -> str:
 def create_new_session_folder() -> Path:
     global session_folder_path
     if session_folder_path is None:
+        # create session folder
         session_folder_path = Path(get_sessions_folder_path()) / default_session_name()
+        session_folder_path.mkdir(exist_ok=True, parents=True)
     return session_folder_path
 
 def get_sessions_folder_path(create_folder: bool = True) -> Path:
@@ -80,24 +84,36 @@ def get_sessions_folder_path(create_folder: bool = True) -> Path:
 def get_most_recent_session_toml_path() -> Path:
     return Path(get_logs_info_and_settings_folder_path()) / MOST_RECENT_SESSION_TOML_FILENAME
 
-def get_most_recent_session_path(subfolder:str = None):
+def get_most_recent_session_path(subfolder:str = None) -> Path:
     if not Path(get_most_recent_session_toml_path()).exists():
         logger.error(f"{MOST_RECENT_SESSION_TOML_FILENAME} not found at {get_most_recent_session_toml_path()}")
         return None
     session_dict = toml.load(str(get_most_recent_session_toml_path()))
-    session_path = session_dict["most_recent_session_path"]
+    session_path = Path(session_dict["most_recent_session_path"])
     if not Path(session_path).exists():
         logger.error(f"Most recent session path {session_path} not found!")
         return None
     if subfolder is not None:
         # check if subfolder is specified in the toml file, else return default
         try:
-            subfolder_path = session_dict[subfolder]
+            subfolder_path = Path(session_dict[subfolder])
         except KeyError:
             subfolder_path = Path(session_path) / subfolder
         return subfolder_path
     else:
         return session_path
+    
+def get_synchronzied_videos_folder_path(session_path: Union[str, Path], create_folder: bool = True) -> Path:
+    path = Path(session_path) / SYNCHRONIZED_VIDEOS_FOLDER_NAME
+    if create_folder:
+        path.mkdir(exist_ok=True, parents=True)
+    return path
+
+def get_framerate_matched_videos_folder_path(session_path: Union[str, Path], create_folder: bool = True) -> Path:
+    path = get_synchronzied_videos_folder_path(session_path=session_folder_path) / FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME
+    if create_folder:
+        path.mkdir(exist_ok=True, parents=True)
+    return path
 
 def get_logs_info_and_settings_folder_path(create_folder: bool = True) -> Path:
     path = Path(get_data_folder_path()) / LOGS_INFO_AND_SETTINGS_FOLDER_NAME

@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.data_layer.session_models.session_info_model import SessionInfoModel
+from src.data_layer.session_models.post_processing_parameter_models import PostProcessingParameterModel
 
 from src.gui.qt.actions_and_menus.actions import Actions
 from src.gui.qt.actions_and_menus.menu_bar import MenuBar
@@ -25,6 +26,7 @@ from src.gui.qt.stylesheets.css_file_watcher import CSSFileWatcher, apply_css_st
 from src.gui.qt.stylesheets.scss_file_watcher import SCSSFileWatcher
 
 from src.gui.qt.utilities.get_qt_app import get_qt_app
+from src.gui.qt.utilities.update_most_recent_session_toml import update_most_recent_session_toml
 
 from src.gui.qt.widgets.active_session_info_widget import ActiveSessionInfoWidget
 from src.gui.qt.widgets.central_tab_widget import CentralTabWidget
@@ -33,6 +35,8 @@ from src.gui.qt.widgets.directory_view_widget import DirectoryViewWidget
 from src.gui.qt.widgets.home_widget import HomeWidget
 from src.gui.qt.widgets.import_videos_wizard import ImportVideosWizard
 from src.gui.qt.widgets.log_view_widget import LogViewWidget
+from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
+from src.gui.qt.widgets.data_visualization.data_visualization_widget import DataVisualizationWidget
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     PATH_TO_LOGO_SVG
@@ -41,6 +45,7 @@ from src.system.paths_and_filenames.path_getters import (
     get_sessions_folder_path,
     get_scss_stylesheet_path,
     get_css_stylesheet_path,
+    create_new_session_folder,
 )
 
 from src.utilities.remove_empty_directories import remove_empty_directories
@@ -140,9 +145,11 @@ class MainWindow(QMainWindow):
 
     def _create_central_tab_widget(self) -> CentralTabWidget:
         self._home_widget = HomeWidget(self)
+        self._data_visualization_widget = DataVisualizationWidget()
         central_tab_widget = CentralTabWidget(
             parent=self,
             home_widget=self._home_widget,
+            data_visualization_widget=self._data_visualization_widget,
             directory_view_widget=self._directory_view_widget,
             active_session_info_widget = self._active_session_info_widget
         )
@@ -157,10 +164,22 @@ class MainWindow(QMainWindow):
     def _create_control_panel_widget(self, log_update: Callable) -> ControlPanelWidget:
 
         # TODO: add controls to control panel widget
+        self._process_motion_capture_data_panel = ProcessMotionCaptureDataPanel(
+            session_processing_parameters=PostProcessingParameterModel(),
+            get_active_session_info=self._active_session_info_widget.get_active_session_info,
+            kill_thread_event=self._kill_thread_event,
+            log_update=log_update
+        )
+        self._process_motion_capture_data_panel.processing_finished.connect(self._handle_processing_finished_signal)
 
         return ControlPanelWidget(
+            process_motion_capture_data_panel=self._process_motion_capture_data_panel,
             parent=self
         )
+    
+    def _handle_processing_finished_signal(self):
+        # TODO: Implement _handle_processing_finished_signal
+        pass
     
     def _handle_import_videos(self, video_paths: List[str], save_folder: Path):
         # save_folder.mkdir(parents=True, exist_ok=True)
@@ -185,14 +204,31 @@ class MainWindow(QMainWindow):
         else:
             self._directory_view_widget.set_folder_as_root(path)
 
+        if Path(session_info_model.synchronized_videos_folder_path).exists():
+            self._directory_view_widget.expand_directory_to_path(session_info_model.synchronized_videos_folder_path)
+        else:
+            self._directory_view_widget.expand_directory_to_path(session_info_model.path)
+
         self._active_session_info_widget.update_parameter_tree()
+        self._update_data_visualization_widget()
         self._directory_view_widget.handle_new_active_session_selected()
 
         # TODO: Update control panel?
-        # TODO: update most recent session toml?
+
+        update_most_recent_session_toml(session_info_model=session_info_model)
         
 
+    def _update_data_visualization_widget(self):
+        active_session = self._active_session_info_widget.active_session_info
 
+        if active_session.data3d_status_check:
+            self._data_visualization_widget.load_skeleton_data(data_path=active_session.mediapipe_3d_data_npy_file_path)
+
+        if active_session.data2d_status_check:
+            self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.annotated_videos_folder_path)
+
+        if active_session.videos_synchronized_status_check:
+            self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.synchronized_videos_folder_path)
 
     # --------------
     # PUBLIC METHODS
@@ -204,28 +240,45 @@ class MainWindow(QMainWindow):
     def handle_start_new_session_action(self):
         logger.info("Starting new session by importing videos")
 
-        import_videos_path = QFileDialog.getExistingDirectory(
-            self,
-            "Select a folder containing motion capture session videos. One video file per camera in the capture area.",
-            str(Path.home())
-        )
-        if len(import_videos_path) == 0:
-            logger.info("User cancelled importing videos")
-            return
+        # create new session folder
+        session_path = create_new_session_folder()
+        # create session info model
+        session_info_model = SessionInfoModel(session_path)
+        update_most_recent_session_toml(session_info_model=session_info_model)
+
+
+
+        import_videos_wizard = ImportVideosWizard(parent=self)
+        import_videos_wizard.exec()
+
+        # import_videos_path = QFileDialog.getExistingDirectory(
+        #     self,
+        #     "Select a folder containing motion capture session videos. One video file per camera in the capture area.",
+        #     str(Path.home())
+        # )
+        # if len(import_videos_path) == 0:
+        #     logger.info("User cancelled importing videos")
+        #     return
         
-        import_video_window = ImportVideosWizard(
-            parent=self,
-            import_path=import_videos_path,
-            kill_thread_event=self._kill_thread_event
-        )
-        import_video_window.video_import_finished.connect(self._handle_import_videos)
-        import_video_window.exec()
+        # import_video_window = ImportVideosWizard(
+        #     parent=self,
+        #     import_path=import_videos_path,
+        #     kill_thread_event=self._kill_thread_event
+        # )
+        # import_video_window.video_import_finished.connect(self._handle_import_videos)
+        # import_video_window.exec()
         # TODO: Implement handle_start_new_session_action
 
 
     def handle_load_existing_session_action(self):
-        # TODO: Implement handle_load_existing_session_action
-        pass
+        logger.info("Opening 'Load Existing Session' dialog")
+        path = QFileDialog.getExistingDirectory(self, "Select a session folder", str(get_sessions_folder_path()))
+        if len(path) == 0:
+            logger.info("User cancelled 'Load Exisiting Session' dialog")
+            return
+        logger.info(f"User selected session path: {path}")
+        self._active_session_info_widget.set_active_session(session_folder_path=path)
+        self._central_tab_widget.setCurrentIndex(2)
 
     def kill_threads_and_processes(self):
         logger.info("Killing running threads and processes")

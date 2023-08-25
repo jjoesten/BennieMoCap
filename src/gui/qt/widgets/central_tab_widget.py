@@ -14,21 +14,26 @@ class CentralTabWidget(QTabWidget):
         self,
         directory_view_widget: QWidget,
         active_session_info_widget: QWidget,
+        data_visualization_widget: QWidget,
         # TODO: widgets to be included in this tab widget
         home_widget: HomeWidget,
         parent=None
     ):
         super().__init__(parent=parent)
+        self.parent = parent
 
         # Widgets
         self._home_widget = home_widget
         self._directory_view_widget = directory_view_widget
         self._active_session_info_widget = active_session_info_widget
+        self._data_visualization_widget = data_visualization_widget
         
         # Create Tabs
         self.addTab(self._home_widget, "Home")
+        self.addTab(self._data_visualization_widget, "Data Visualization")
         self.addTab(self._directory_view_widget, "Directory View")
         self.addTab(self._active_session_info_widget, "Active Session Info")
+
 
         
 

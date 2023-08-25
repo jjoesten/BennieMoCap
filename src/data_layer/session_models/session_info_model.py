@@ -8,12 +8,17 @@ import numpy as np
 from src.system.paths_and_filenames.folder_and_filenames import (
     SYNCHRONIZED_VIDEOS_FOLDER_NAME,
     ANNOTATED_VIDEOS_FOLDER_NAME,
-    OUTPUT_DATA_FOLDER_NAME
+    OUTPUT_DATA_FOLDER_NAME,
+    RAW_DATA_FOLDER_NAME,
+    MEDIAPIPE_2D_NPY_FILENAME,
+    RAW_MEDIAPIPE_3D_NPY_FILENAME,
+    MEDIAPIPE_3D_NPY_FILENAME
 )
 from src.system.paths_and_filenames.path_getters import (
     create_camera_calibration_file_name
 )
 from src.system.tests.video_tests import test_video_framerates, test_video_frame_counts
+from src.tests.test_image_tracking_data_shape import test_image_tracking_data_shape
 
 class SessionInfoModel:
     def __init__(self, session_folder_path: Union[str, Path]):
@@ -65,6 +70,27 @@ class SessionInfoModel:
     def annotated_videos_folder_path(self) -> Path:
         return Path(self._path) / ANNOTATED_VIDEOS_FOLDER_NAME
     
+    @property
+    def raw_data_folder_path(self) -> Path:
+        return Path(self.output_data_folder_path) / RAW_DATA_FOLDER_NAME
+    
+    @property
+    def mediapipe_2d_data_npy_file_path(self) -> Path:
+        return Path(self._path) / OUTPUT_DATA_FOLDER_NAME / RAW_DATA_FOLDER_NAME / MEDIAPIPE_2D_NPY_FILENAME
+    
+    @property
+    def mediapipe_3d_data_npy_file_path(self) -> Path:
+        return Path(self._path) / OUTPUT_DATA_FOLDER_NAME / MEDIAPIPE_3D_NPY_FILENAME
+    
+    @property
+    def raw_mediapipe_3d_data_npy_file_path(self) -> Path:
+        return Path(self._path) / OUTPUT_DATA_FOLDER_NAME/ RAW_DATA_FOLDER_NAME / RAW_MEDIAPIPE_3D_NPY_FILENAME
+
+    
+
+    @property
+    def calibration_toml_check(self) -> bool:
+        return self._session_status_checker.check_calibration_toml_status()
 
     @property
     def videos_framerate_status_check(self) -> bool:
@@ -109,6 +135,7 @@ class SessionStatusChecker:
 
     def check_videos_framerate_status(self) -> bool:
         try:
+            # TODO: Test this, doesn't seem to be working
             test_video_framerates(self._session_info_model.synchronized_videos_folder_path)
             return True
         except AssertionError:
@@ -122,8 +149,14 @@ class SessionStatusChecker:
             return False
     
     def check_data2d_status(self) -> bool:
-        # TODO: Implement check_data2d_status
-        return False
+        try:
+            test_image_tracking_data_shape(
+                synchronized_video_folder_path=self._session_info_model.synchronized_videos_folder_path,
+                image_tracking_data_file_path=self._session_info_model.mediapipe_2d_data_npy_file_path
+            )
+            return True
+        except AssertionError:
+            return False
     
     def check_data3d_status(self) -> bool:
         # TODO: Implement check_data3d_status

@@ -4,10 +4,13 @@ from PyQt6.QtWidgets import (
     QTabWidget
 )
 
+from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
+
 class ControlPanelWidget(QWidget):
     def __init__(
         self,
         # TODO: pass in widgets for control panel
+        process_motion_capture_data_panel: ProcessMotionCaptureDataPanel,
         parent=None
     ):
         super().__init__(parent=parent)
@@ -19,6 +22,7 @@ class ControlPanelWidget(QWidget):
         self._layout.addWidget(self._tab_widget)
 
         # TODO: Add Tabs
+        self._tab_widget.addTab(process_motion_capture_data_panel, "Process Data")
 
         self._tab_widget.setProperty("control_panel_tabs", True)
         self.style().polish(self._tab_widget)
