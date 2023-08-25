@@ -89,7 +89,7 @@ class MediapipeSkeletonDetector:
 
         all_cameras_data2d_list = [m2d.all_data2d_nFrames_nTrackedPts_XY for m2d in mediapipe2d_single_camera_npy_array_list]
         all_cameras_pose_world_data_list = [m2d.body_world_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
-        all_cameras_right_hand_world_data_list = [m2d.rightHand_frameNumber_trackePointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
+        all_cameras_right_hand_world_data_list = [m2d.rightHand_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
         all_cameras_left_hand_world_data_list = [m2d.leftHand_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
         all_cameras_face_world_data_list = [m2d.face_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
 

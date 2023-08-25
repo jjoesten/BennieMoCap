@@ -25,6 +25,8 @@ SESSION_PARAMETERS_JSON_FILENAME = "session_parameters.json"
 LAST_SUCCESSFUL_CALIBRATION_FILENAME = "last_successful_calibration.toml"
 MEDIAPIPE_2D_NPY_FILENAME = "mediapipe2dData_numCams_numFrames_numTrackedPoints_pixelXYZ.npy"
 MEDIAPIPE_BODY_WORLD_FILENAME = "mediapipeBodyWorld_numCams_numFrames_numTrackedPoitnt_XYZ.npy"
+RAW_MEDIAPIPE_3D_NPY_FILENAME = "mediapipe3dData_numFrames_numTrackedPoints_spatialXYZ.npy"
+MEDIAPIPE_3D_NPY_FILENAME = "mediapipeSkel_3d_body_hands_face.npy"
 
 
 # logo

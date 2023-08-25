@@ -9,6 +9,8 @@ import pandas as pd
 from src.system.logging.queue_logger import DirectQueueHandler
 from src.system.logging.configure import log_view_format_string
 
+from src.tests.test_image_tracking_data_shape import test_image_tracking_data_shape
+
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     RAW_DATA_FOLDER_NAME
@@ -47,5 +49,22 @@ def process_session_folder(
         logger.info("Detecting 2D skeletons")
         mediapipe_skeleton_detector = MediapipeSkeletonDetector(parameter_model=session.mediapipe_parameters_model, use_tqdm=use_tqdm)
 
-        mediapipe_skeleton_detector.process_folder(video_folder_path=session.session_info_model.synchronized_videos_folder_path,
-                                                   output_data_folder_path=session.session_info_model.output_data_folder_path / RAW_DATA_FOLDER_NAME)
+        mediapipe_image_data_numCams_numFrames_numTrackedPts_XYZ = (
+            mediapipe_skeleton_detector.process_folder(
+                video_folder_path=session.session_info_model.synchronized_videos_folder_path,
+                output_data_folder_path=session.session_info_model.output_data_folder_path / RAW_DATA_FOLDER_NAME
+            )
+        )
+
+    if kill_event is not None and kill_event.is_set():
+        return
+    
+    try:
+        assert test_image_tracking_data_shape(
+            synchronized_video_folder_path=session.session_info_model.synchronized_videos_folder_path,
+            image_tracking_data_file_path=session.session_info_model.mediapipe_2d_data_npy_file_path,
+        )
+    except AssertionError as e:
+        logger.error(e, exc_info=True)
+
+

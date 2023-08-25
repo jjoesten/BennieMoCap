@@ -36,6 +36,7 @@ from src.gui.qt.widgets.home_widget import HomeWidget
 from src.gui.qt.widgets.import_videos_wizard import ImportVideosWizard
 from src.gui.qt.widgets.log_view_widget import LogViewWidget
 from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
+from src.gui.qt.widgets.data_visualization.data_visualization_widget import DataVisualizationWidget
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     PATH_TO_LOGO_SVG
@@ -144,9 +145,11 @@ class MainWindow(QMainWindow):
 
     def _create_central_tab_widget(self) -> CentralTabWidget:
         self._home_widget = HomeWidget(self)
+        self._data_visualization_widget = DataVisualizationWidget()
         central_tab_widget = CentralTabWidget(
             parent=self,
             home_widget=self._home_widget,
+            data_visualization_widget=self._data_visualization_widget,
             directory_view_widget=self._directory_view_widget,
             active_session_info_widget = self._active_session_info_widget
         )
@@ -201,14 +204,31 @@ class MainWindow(QMainWindow):
         else:
             self._directory_view_widget.set_folder_as_root(path)
 
+        if Path(session_info_model.synchronized_videos_folder_path).exists():
+            self._directory_view_widget.expand_directory_to_path(session_info_model.synchronized_videos_folder_path)
+        else:
+            self._directory_view_widget.expand_directory_to_path(session_info_model.path)
+
         self._active_session_info_widget.update_parameter_tree()
+        self._update_data_visualization_widget()
         self._directory_view_widget.handle_new_active_session_selected()
 
         # TODO: Update control panel?
-        # TODO: update most recent session toml?
+
+        update_most_recent_session_toml(session_info_model=session_info_model)
         
 
+    def _update_data_visualization_widget(self):
+        active_session = self._active_session_info_widget.active_session_info
 
+        if active_session.data3d_status_check:
+            self._data_visualization_widget.load_skeleton_data(data_path=active_session.mediapipe_3d_data_npy_file_path)
+
+        if active_session.data2d_status_check:
+            self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.annotated_videos_folder_path)
+
+        if active_session.videos_synchronized_status_check:
+            self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.synchronized_videos_folder_path)
 
     # --------------
     # PUBLIC METHODS
