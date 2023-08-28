@@ -11,8 +11,8 @@ from PyQt6.QtCore import pyqtSignal, QThread
 
 # from skelly_synchronize.skelly_synchronize import create_video_info_dict, get_fps_list
 
-from src.system.paths_and_filenames.folder_and_filenames import SYNCHRONIZED_VIDEOS_FOLDER_NAME
-from src.utilities.video import get_video_paths, create_video_info_dict, get_fps_list, change_framerate_ffmpeg
+from src.system.paths_and_filenames.folder_and_filenames import FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME
+from src.utilities.video import get_video_paths, create_video_info_dict, get_fps_list, change_framerate_ffmpeg, convert_video_to_mp4
 
 class MatchFramerateThreadWorker(QThread):
     finished = pyqtSignal(list)
@@ -68,14 +68,19 @@ class MatchFramerateThreadWorker(QThread):
             video_info = video_info_dict[key]
             input_path = Path(video_info["video_pathstring"])
             output_filename = f"fr_{input_path.name}"
-            output_path = Path(self._output_folder_path) / SYNCHRONIZED_VIDEOS_FOLDER_NAME
+            if Path(output_filename).suffix.lower() != ".mp4":
+                output_filename = output_filename.replace(Path(output_filename).suffix, ".mp4")
+            output_path = Path(self._output_folder_path)
             output_path.mkdir(exist_ok=True, parents=True)
             output_path = output_path / output_filename
 
             if video_info["video_fps"] > min_fps:
+                logger.debug(f"Changing framerate of {video_info['camera_name']} from {video_info['video_fps']} to {min_fps}, saving to {output_path}")
                 change_framerate_ffmpeg(video_info["video_pathstring"], str(output_path), min_fps)
             else:
-                copyfile(video_info["video_pathstring"], str(output_path))
+                logger.debug(f"Copying {video_info['camera_name']} to {output_path}")
+                # copyfile(video_info["video_pathstring"], str(output_path))
+                convert_video_to_mp4(video_info["video_pathstring"], str(output_path))
 
             self._return_video_paths.append(Path(output_path))
 

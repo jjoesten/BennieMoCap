@@ -48,7 +48,7 @@ from src.gui.qt.widgets.spinner_widget import QtWaitSpinner
 from src.data_layer.session_models.video_model import VideoModel
 
 from src.utilities.video import change_framerate_ffmpeg, convert_video_to_mp4
-from src.utilities.video_sync import synchronize_videos_from_audio
+from src.utilities.video_sync.audio_sync import synchronize_videos_from_audio
 
 # from skelly_synchronize.skelly_synchronize import synchronize_videos_from_audio
 

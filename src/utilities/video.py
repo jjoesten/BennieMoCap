@@ -168,7 +168,7 @@ def trim_single_video_deffcode(
 
 
 def create_video_info_dict(
-        video_filepath_list: list
+        video_filepath_list: list[Path]
 ) -> Dict[str, dict]:
     debugpy.debug_this_thread()
     video_info_dict = dict()
@@ -176,7 +176,7 @@ def create_video_info_dict(
         video_dict = dict()
         video_dict["video_filepath"] = video_filepath
         video_dict["video_pathstring"] = str(video_filepath)
-        video_name = video_filepath.stem
+        video_name = Path(video_filepath).stem
         video_dict["camera_name"] = video_name
 
         video_dict["video_duration"] = _extract_video_duration_ffmpeg(file_pathstring=str(video_filepath))
@@ -251,6 +251,8 @@ def change_framerate_ffmpeg(input_video_pathstring: str, output_video_pathstring
             "ffmpeg",
             "-i",
             input_video_pathstring,
+            "-crf",
+            "18",
             "-filter:v",
             f"fps={new_framerate}",
             output_video_pathstring
@@ -259,9 +261,11 @@ def change_framerate_ffmpeg(input_video_pathstring: str, output_video_pathstring
         stderr=subprocess.STDOUT,
     )
 
-def convert_video_to_mp4(input_video_pathstring: str) -> Path:
+def convert_video_to_mp4(input_video_pathstring: str, output_video_pathstring: str = None) -> Path:
     debugpy.debug_this_thread()
-    output_video_pathstring = input_video_pathstring.replace(Path(input_video_pathstring).suffix, ".mp4")
+    if output_video_pathstring is None:
+        output_video_pathstring = input_video_pathstring.replace(Path(input_video_pathstring).suffix, ".mp4")
+    
     convert_video_subprocess = subprocess.run(
         [
             "ffmpeg",

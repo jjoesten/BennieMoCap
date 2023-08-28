@@ -8,6 +8,7 @@ import numpy as np
 from src.system.paths_and_filenames.folder_and_filenames import (
     SYNCHRONIZED_VIDEOS_FOLDER_NAME,
     ANNOTATED_VIDEOS_FOLDER_NAME,
+    FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME,
     OUTPUT_DATA_FOLDER_NAME,
     RAW_DATA_FOLDER_NAME,
     MEDIAPIPE_2D_NPY_FILENAME,
@@ -65,6 +66,10 @@ class SessionInfoModel:
     @property
     def synchronized_videos_folder_path(self) -> Path:
         return Path(self._path) / SYNCHRONIZED_VIDEOS_FOLDER_NAME
+    
+    @property
+    def framerate_matched_videos_folder_path(self) -> Path:
+        return Path(self._path) / FRAMERATE_MATCHED_VIDEOS_FOLDER_NAME
     
     @property
     def annotated_videos_folder_path(self) -> Path:

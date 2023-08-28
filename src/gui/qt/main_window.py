@@ -35,8 +35,11 @@ from src.gui.qt.widgets.directory_view_widget import DirectoryViewWidget
 from src.gui.qt.widgets.home_widget import HomeWidget
 from src.gui.qt.widgets.import_videos_wizard import ImportVideosWizard
 from src.gui.qt.widgets.log_view_widget import LogViewWidget
+from src.gui.qt.widgets.control_panel.import_videos_panel import ImportVideosPanel
+from src.gui.qt.widgets.control_panel.synchronize_videos_panel import SynchronizeVideosPanel
 from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
 from src.gui.qt.widgets.data_visualization.data_visualization_widget import DataVisualizationWidget
+from src.gui.qt.widgets.synchronization_widget import SynchronizationWidget
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     PATH_TO_LOGO_SVG
@@ -146,9 +149,11 @@ class MainWindow(QMainWindow):
     def _create_central_tab_widget(self) -> CentralTabWidget:
         self._home_widget = HomeWidget(self)
         self._data_visualization_widget = DataVisualizationWidget()
+        self._synchronization_widget = SynchronizationWidget()
         central_tab_widget = CentralTabWidget(
             parent=self,
             home_widget=self._home_widget,
+            synchronization_widget = self._synchronization_widget,
             data_visualization_widget=self._data_visualization_widget,
             directory_view_widget=self._directory_view_widget,
             active_session_info_widget = self._active_session_info_widget
@@ -164,6 +169,20 @@ class MainWindow(QMainWindow):
     def _create_control_panel_widget(self, log_update: Callable) -> ControlPanelWidget:
 
         # TODO: add controls to control panel widget
+        self._import_videos_panel = ImportVideosPanel(
+            get_active_session_info=self._active_session_info_widget.get_active_session_info,
+            kill_thread_event=self._kill_thread_event,
+            log_update=log_update
+        )
+        self._import_videos_panel.video_import_finished.connect(self._handle_video_import_finished)
+
+        self._synchronize_videos_panel = SynchronizeVideosPanel(
+            kill_thread_event=self._kill_thread_event,
+            log_update=log_update,
+            synchronization_widget = self._synchronization_widget,
+            session_info_model=self._active_session_info_widget.active_session_info
+        )
+
         self._process_motion_capture_data_panel = ProcessMotionCaptureDataPanel(
             session_processing_parameters=PostProcessingParameterModel(),
             get_active_session_info=self._active_session_info_widget.get_active_session_info,
@@ -173,6 +192,8 @@ class MainWindow(QMainWindow):
         self._process_motion_capture_data_panel.processing_finished.connect(self._handle_processing_finished_signal)
 
         return ControlPanelWidget(
+            import_videos_panel=self._import_videos_panel,
+            synchronize_videos_panel=self._synchronize_videos_panel,
             process_motion_capture_data_panel=self._process_motion_capture_data_panel,
             parent=self
         )
@@ -181,14 +202,14 @@ class MainWindow(QMainWindow):
         # TODO: Implement _handle_processing_finished_signal
         pass
     
-    def _handle_import_videos(self, video_paths: List[str], save_folder: Path):
-        # save_folder.mkdir(parents=True, exist_ok=True)
+    def _handle_video_import_finished(self, video_paths: list, save_folder: str):
 
         if len(video_paths) == 0:
             logger.error("No videos to import")
             return
         
         self._active_session_info_widget.set_active_session(session_folder_path=save_folder)
+        self._synchronization_widget.generate_video_display(self._active_session_info_widget.active_session_info.framerate_matched_videos_folder_path)
 
         # TODO: at this point the videos have been framerate matched and saved to the synchronized videos folder
         # Next step is to synchronized based on audio
@@ -211,6 +232,7 @@ class MainWindow(QMainWindow):
 
         self._active_session_info_widget.update_parameter_tree()
         self._update_data_visualization_widget()
+        self._synchronization_widget.generate_video_display(session_info_model.framerate_matched_videos_folder_path)
         self._directory_view_widget.handle_new_active_session_selected()
 
         # TODO: Update control panel?
@@ -226,9 +248,9 @@ class MainWindow(QMainWindow):
 
         if active_session.data2d_status_check:
             self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.annotated_videos_folder_path)
-
-        if active_session.videos_synchronized_status_check:
+        elif active_session.videos_synchronized_status_check:
             self._data_visualization_widget.generate_video_display(videos_folder_path=active_session.synchronized_videos_folder_path)
+        
 
     # --------------
     # PUBLIC METHODS
@@ -238,35 +260,21 @@ class MainWindow(QMainWindow):
         super().update()
 
     def handle_start_new_session_action(self):
-        logger.info("Starting new session by importing videos")
+        logger.info("Starting new session")
 
         # create new session folder
         session_path = create_new_session_folder()
+
         # create session info model
         session_info_model = SessionInfoModel(session_path)
         update_most_recent_session_toml(session_info_model=session_info_model)
 
+        # Set active session
+        self._active_session_info_widget.set_active_session(session_path)
 
-
-        import_videos_wizard = ImportVideosWizard(parent=self)
-        import_videos_wizard.exec()
-
-        # import_videos_path = QFileDialog.getExistingDirectory(
-        #     self,
-        #     "Select a folder containing motion capture session videos. One video file per camera in the capture area.",
-        #     str(Path.home())
-        # )
-        # if len(import_videos_path) == 0:
-        #     logger.info("User cancelled importing videos")
-        #     return
-        
-        # import_video_window = ImportVideosWizard(
-        #     parent=self,
-        #     import_path=import_videos_path,
-        #     kill_thread_event=self._kill_thread_event
-        # )
-        # import_video_window.video_import_finished.connect(self._handle_import_videos)
-        # import_video_window.exec()
+        # Set Tabs...
+        self._control_panel_widget.tab_widget.setCurrentIndex(1)
+       
         # TODO: Implement handle_start_new_session_action
 
 
