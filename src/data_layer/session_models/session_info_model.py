@@ -177,4 +177,16 @@ class SessionStatusChecker:
         return False
     
     def check_calibration_toml_status(self) -> bool:
-        return Path(self._session_info_model.calibration_toml_path).is_file()
+        toml_status = Path(self._session_info_model.calibration_toml_path).is_file()
+        if not toml_status:
+            logger.info("No calibration file found with session name, checking for other calibration files in the session path")
+            toml_status = self._check_for_other_calibration_toml()
+        return toml_status
+    
+    def _check_for_other_calibration_toml(self) -> bool:
+        for file in Path(self._session_info_model.path).iterdir():
+            if file.is_file() and file.name.endswith("camera_calibration.toml"):
+                self._session_info_model.calibration_toml_path = str(file)
+                logger.info(f"Found calibration file at: {self._session_info_model.calibration_toml_path}")
+                return True
+        return False

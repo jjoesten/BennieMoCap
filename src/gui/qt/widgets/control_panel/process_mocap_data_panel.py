@@ -102,7 +102,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         if not Path(session_parameter_model.session_info_model.path).exists():
             logger.error(f"Session path does not exist: {session_parameter_model.session_info_model.path}.")
 
-        # TODO: set calibration toml path
+        session_parameter_model.session_info_model.calibration_toml_path = self._calibration_control_panel.calibration_toml_path
 
         self._process_mocap_data_thread_worker = ProcessMotionCaptureDataThreadWorker(session_parameter_model, kill_event=self._kill_thread_event)
         self._process_mocap_data_thread_worker.in_progress.connect(self._log_update)
