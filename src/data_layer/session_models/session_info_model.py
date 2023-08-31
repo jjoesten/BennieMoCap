@@ -13,7 +13,8 @@ from src.system.paths_and_filenames.folder_and_filenames import (
     RAW_DATA_FOLDER_NAME,
     MEDIAPIPE_2D_NPY_FILENAME,
     RAW_MEDIAPIPE_3D_NPY_FILENAME,
-    MEDIAPIPE_3D_NPY_FILENAME
+    MEDIAPIPE_3D_NPY_FILENAME,
+    MEDIAPIPE_REPROJECTION_ERROR_NPY_FILENAME
 )
 from src.system.paths_and_filenames.path_getters import (
     create_camera_calibration_file_name
@@ -91,7 +92,11 @@ class SessionInfoModel:
     def raw_mediapipe_3d_data_npy_file_path(self) -> Path:
         return Path(self._path) / OUTPUT_DATA_FOLDER_NAME/ RAW_DATA_FOLDER_NAME / RAW_MEDIAPIPE_3D_NPY_FILENAME
 
-    
+    @property
+    def mediapipe_reprojection_error_data_npy_file_path(self):
+        return Path(self._path) / OUTPUT_DATA_FOLDER_NAME / RAW_DATA_FOLDER_NAME / MEDIAPIPE_REPROJECTION_ERROR_NPY_FILENAME
+
+
 
     @property
     def calibration_toml_check(self) -> bool:

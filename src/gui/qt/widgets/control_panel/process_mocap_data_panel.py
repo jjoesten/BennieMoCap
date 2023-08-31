@@ -27,6 +27,8 @@ from src.gui.qt.widgets.control_panel.parameter_groups.create_parameter_groups i
     SKIP_BUTTERWORTH_FILTER_NAME
 )
 
+from src.gui.qt.widgets.control_panel.calibration_control_panel import CalibrationControlPanel
+from src.gui.qt.utilities.gui_state import GuiState
 from src.gui.qt.workers.process_motion_capture_data_thread_worker import ProcessMotionCaptureDataThreadWorker
 
 class ProcessMotionCaptureDataPanel(QWidget):
@@ -38,6 +40,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         get_active_session_info: Callable,
         kill_thread_event: threading.Event,
         log_update: Callable,
+        gui_state: GuiState,
         parent=None
     ):
         super().__init__(parent=parent)
@@ -57,7 +60,13 @@ class ProcessMotionCaptureDataPanel(QWidget):
         calibration_group_box.setLayout(vbox)
         self._layout.addWidget(calibration_group_box)
 
-        # TODO: Add calibration widget
+        self._calibration_control_panel = CalibrationControlPanel(
+            get_active_session_info=self._get_active_session_info,
+            kill_thread_event=self._kill_thread_event,
+            gui_state=gui_state,
+            parent=self,
+        )
+        vbox.addWidget(self._calibration_control_panel)
 
         self._process_mocap_data_button = QPushButton("Process Motion Capture Videos")
         self._process_mocap_data_button.setFont(QFont("Dosis", 16, QFont.Weight.Bold))
@@ -143,7 +152,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
                     type="group",
                     children=[
                         self._create_skip_this_step_parameter(skip_step_name=SKIP_3D_TRIANGULATION_NAME),
-                        create_3d_triangulation_parameter_group(session_processing_parameter_mode.anipose_triangulate_3d_parameters_mode),
+                        create_3d_triangulation_parameter_group(session_processing_parameter_mode.anipose_triangulate_3d_parameters_model),
                     ],
                     tip="Methods for triangulating 3d points from 2d points (using epipolar geometry and the 'camera_calibration' data)."
                 ),

@@ -40,6 +40,7 @@ from src.gui.qt.widgets.control_panel.synchronize_videos_panel import Synchroniz
 from src.gui.qt.widgets.control_panel.process_mocap_data_panel import ProcessMotionCaptureDataPanel
 from src.gui.qt.widgets.data_visualization.data_visualization_widget import DataVisualizationWidget
 from src.gui.qt.widgets.synchronization_widget import SynchronizationWidget
+from src.gui.qt.utilities.gui_state import load_gui_state, save_gui_state, GuiState
 
 from src.system.paths_and_filenames.folder_and_filenames import (
     PATH_TO_LOGO_SVG
@@ -73,6 +74,14 @@ class MainWindow(QMainWindow):
         self._data_folder_path = data_folder_path
         self._kill_thread_event = multiprocessing.Event()
         self._actions = Actions(main_window=self)
+
+        # GUI State
+        try:
+            self._gui_state = load_gui_state()
+            logger.info("Successfully loaded previous settings")
+        except Exception:
+            logger.info("Failed to load previous settings, using default")
+            self._gui_state = GuiState()
 
         # Setup Window
         self._size_main_window(.9, .9)
@@ -187,6 +196,7 @@ class MainWindow(QMainWindow):
             session_processing_parameters=PostProcessingParameterModel(),
             get_active_session_info=self._active_session_info_widget.get_active_session_info,
             kill_thread_event=self._kill_thread_event,
+            gui_state=self._gui_state,
             log_update=log_update
         )
         self._process_motion_capture_data_panel.processing_finished.connect(self._handle_processing_finished_signal)
