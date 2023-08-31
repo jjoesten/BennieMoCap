@@ -16,7 +16,7 @@ class QSliderButton(QPushButton):
         self.setFixedWidth(75)
 
 class VideoSlider(QWidget):
-    def __init__(self):
+    def __init__(self, show_buttons: bool = True):
         super().__init__()
 
         self._timer = QTimer()
@@ -35,19 +35,26 @@ class VideoSlider(QWidget):
         self._frame_count_label = QLabel(f"Frame# {self._slider.value()}")
         slider_hbox.addWidget(self._frame_count_label)
 
-        hbox = QHBoxLayout()
-        self._layout.addLayout(hbox)
+        button_layout = QHBoxLayout()
+        self._layout.addLayout(button_layout)
 
         self._play_button = QSliderButton("Play")
         self._play_button.clicked.connect(self._play_button_clicked)
-        hbox.addWidget(self._play_button)
+        button_layout.addWidget(self._play_button)
 
         self._pause_button = QSliderButton("Pause")
         self._pause_button.clicked.connect(self._pause_button_clicked)
-        hbox.addWidget(self._pause_button)
+        button_layout.addWidget(self._pause_button)
 
         self._stop_button = QSliderButton("Stop")
         self._stop_button.clicked.connect(self._reset_button_clicked)
+        button_layout.addWidget(self._stop_button)
+
+        if show_buttons == False:
+            self._play_button.hide()
+            self._pause_button.hide()
+            self._stop_button.hide()
+            
 
         self.set_frames_per_second(DEFAULT_FPS)
 
@@ -62,6 +69,10 @@ class VideoSlider(QWidget):
     @property
     def slider(self):
         return self._slider
+    
+    @property
+    def current_frame(self):
+        return self._slider.value()
     
     def set_frames_per_second(self, frames_per_second):
         self._frames_per_second = frames_per_second

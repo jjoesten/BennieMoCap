@@ -30,7 +30,7 @@ class PostProcessingParametersModel(BaseModel):
 class PostProcessingParameterModel(BaseModel):
     session_info_model: SessionInfoModel = None
     mediapipe_parameters_model: MediapipeParametersModel = MediapipeParametersModel()
-    anipose_triangulate_3d_parameters_mode: AniposeTriangulate3DParametersModel = AniposeTriangulate3DParametersModel()
+    anipose_triangulate_3d_parameters_model: AniposeTriangulate3DParametersModel = AniposeTriangulate3DParametersModel()
     post_processing_parameters_model: PostProcessingParametersModel = PostProcessingParametersModel()
 
     class Config:

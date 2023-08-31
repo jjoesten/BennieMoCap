@@ -14,6 +14,7 @@ class CentralTabWidget(QTabWidget):
         self,
         directory_view_widget: QWidget,
         active_session_info_widget: QWidget,
+        synchronization_widget: QWidget,
         data_visualization_widget: QWidget,
         # TODO: widgets to be included in this tab widget
         home_widget: HomeWidget,
@@ -27,9 +28,11 @@ class CentralTabWidget(QTabWidget):
         self._directory_view_widget = directory_view_widget
         self._active_session_info_widget = active_session_info_widget
         self._data_visualization_widget = data_visualization_widget
+        self._synchronization_widget = synchronization_widget
         
         # Create Tabs
         self.addTab(self._home_widget, "Home")
+        self.addTab(self._synchronization_widget, "Video Synch")
         self.addTab(self._data_visualization_widget, "Data Visualization")
         self.addTab(self._directory_view_widget, "Directory View")
         self.addTab(self._active_session_info_widget, "Active Session Info")

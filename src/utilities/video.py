@@ -11,7 +11,7 @@ import json
 import cv2
 from deffcode import FFdecoder, Sourcer
 
-def get_video_paths(video_folder: Union[str, Path]) -> list:
+def get_video_paths(video_folder: Union[str, Path]) -> list[Path]:
     list_of_video_paths = list(Path(video_folder).glob("*.mp4")) + list(Path(video_folder).glob("*.MP4"))
     unique_list_of_video_paths = _get_unique_list(list_of_video_paths)
     return unique_list_of_video_paths
@@ -168,7 +168,7 @@ def trim_single_video_deffcode(
 
 
 def create_video_info_dict(
-        video_filepath_list: list
+        video_filepath_list: list[Path]
 ) -> Dict[str, dict]:
     debugpy.debug_this_thread()
     video_info_dict = dict()
@@ -176,11 +176,12 @@ def create_video_info_dict(
         video_dict = dict()
         video_dict["video_filepath"] = video_filepath
         video_dict["video_pathstring"] = str(video_filepath)
-        video_name = video_filepath.stem
+        video_name = Path(video_filepath).stem
         video_dict["camera_name"] = video_name
 
         video_dict["video_duration"] = _extract_video_duration_ffmpeg(file_pathstring=str(video_filepath))
         video_dict["video_fps"] = _extract_video_fps_ffmpeg(file_pathstring=str(video_filepath))
+        video_dict["video_frame_count"] = get_frame_count_of_video(filepath=str(video_filepath))
 
         video_info_dict[video_name] = video_dict
 
@@ -213,6 +214,10 @@ def trim_videos(
 ) -> list:
     minimum_duration = _find_minimum_video_duration(video_info_dict=video_info_dict, lag_dict=lag_dict)
     minimum_frames = int(minimum_duration * fps)
+    # check that calculated minimum frames is not greater than the smallest video frame count
+    minimum_video_frame_count = min([video_dict["video_frame_count"] for video_dict in video_info_dict.values()])
+    if minimum_frames > minimum_video_frame_count:
+        minimum_frames = minimum_video_frame_count
 
     for video_dict in video_info_dict.values():
         logger.debug(f"trimming video file {video_dict['camera_name']}")
@@ -251,6 +256,8 @@ def change_framerate_ffmpeg(input_video_pathstring: str, output_video_pathstring
             "ffmpeg",
             "-i",
             input_video_pathstring,
+            "-crf",
+            "18",
             "-filter:v",
             f"fps={new_framerate}",
             output_video_pathstring
@@ -259,9 +266,11 @@ def change_framerate_ffmpeg(input_video_pathstring: str, output_video_pathstring
         stderr=subprocess.STDOUT,
     )
 
-def convert_video_to_mp4(input_video_pathstring: str) -> Path:
+def convert_video_to_mp4(input_video_pathstring: str, output_video_pathstring: str = None) -> Path:
     debugpy.debug_this_thread()
-    output_video_pathstring = input_video_pathstring.replace(Path(input_video_pathstring).suffix, ".mp4")
+    if output_video_pathstring is None:
+        output_video_pathstring = input_video_pathstring.replace(Path(input_video_pathstring).suffix, ".mp4")
+    
     convert_video_subprocess = subprocess.run(
         [
             "ffmpeg",
@@ -290,6 +299,10 @@ def get_framerates_of_videos(folder_path: Union[str, Path]) -> list[float]:
         framerate_list.append(float(cap.get(cv2.CAP_PROP_FPS)))
         cap.release()
     return framerate_list
+
+def get_frame_count_of_video(filepath: Union[str, Path]) -> int:
+    cap = cv2.VideoCapture(str(filepath))
+    return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 def get_frame_count_of_videos(folder_path: Union[str, Path]):
     video_paths = get_video_paths(Path(folder_path))
