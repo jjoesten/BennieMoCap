@@ -164,7 +164,7 @@ def create_post_processing_parameter_group(
 
 def extract_parameter_model_from_parameter_tree(
     parameter_object: Parameter,
-) -> PostProcessingParameterModel:
+):
     parameter_values_dictionary = extract_processing_parameter_model_from_tree(parameter_object=parameter_object)
 
     mediapipe_model_complexity_integer = get_integer_from_mediapipe_model_complexity(

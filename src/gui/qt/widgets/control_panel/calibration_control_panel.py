@@ -108,16 +108,16 @@ class CalibrationControlPanel(QWidget):
         self._calibrate_from_active_session_button.setEnabled(False)
         self._calibrate_from_active_session_button.clicked.connect(self.calibrate_from_active_session)
 
-        self._charuco_layout = self._create_charuco_layout()
+        self._charuco_form_layout = self._create_charuco_form_layout()
         hbox2 = QHBoxLayout()
         hbox2.addStretch()
-        hbox2.addLayout(self._charuco_layout)
+        hbox2.addLayout(self._charuco_form_layout)
         vbox.addLayout(hbox2)
         self._set_charuco_form_visibility(False)
 
         return vbox
     
-    def _create_charuco_layout(self) -> QFormLayout:
+    def _create_charuco_form_layout(self) -> QFormLayout:
         form_layout = QFormLayout()
 
         self._charuco_square_size_line_edit = QLineEdit()
@@ -158,7 +158,7 @@ class CalibrationControlPanel(QWidget):
 
     def _handle_calibrate_from_active_session_toggled(self, checked):
         active_session_info: SessionInfoModel = self._get_active_session_info()
-        self._update_calibrate_from_active_recording_button_text()
+        self.update_calibrate_from_active_recording_button_text()
         self.update_calibration_toml_path()
 
         if checked and active_session_info is not None and active_session_info.videos_synchronized_status_check:
@@ -181,7 +181,7 @@ class CalibrationControlPanel(QWidget):
                 active_session.calibration_toml_path
 
 
-    def _update_calibrate_from_active_recording_button_text(self):
+    def update_calibrate_from_active_recording_button_text(self):
         active_session_info: SessionInfoModel = self._get_active_session_info()
         if active_session_info is None:
             active_path_str = "- No Active Session Selected -"

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 )
 from pyqtgraph.parametertree import Parameter, ParameterTree
 
+from src.data_layer.session_models.session_info_model import SessionInfoModel
 from src.data_layer.session_models.post_processing_parameter_models import PostProcessingParameterModel
 
 from src.gui.qt.widgets.control_panel.parameter_groups.create_parameter_groups import (
@@ -47,7 +48,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         super().__init__(parent=parent)
 
         self._kill_thread_event = kill_thread_event
-        self._get_active_session_info = get_active_session_info
+        self._get_active_session_info: SessionInfoModel = get_active_session_info
         self._log_update = log_update
         self._session_processing_parameter_model = session_processing_parameters
         self._session_processing_parameter_model.session_info_model = self._get_active_session_info()
@@ -84,13 +85,15 @@ class ProcessMotionCaptureDataPanel(QWidget):
     @property
     def process_mocap_data_button(self):
         return self._process_mocap_data_button
-    
-
 
     @pyqtSlot()
     def _handle_finished_signal(self):
         logger.debug("Process motion capture data process finished.")
         self.processing_finished.emit()
+
+    def update_calibration_path(self) -> bool:
+        self._calibration_control_panel.update_calibrate_from_active_recording_button_text()
+        return self._calibration_control_panel.update_calibration_toml_path()
 
 
     def _launch_process_mocap_data_thread_worker(self):
@@ -116,7 +119,10 @@ class ProcessMotionCaptureDataPanel(QWidget):
         parameter_model = extract_parameter_model_from_parameter_tree(parameter_object=self._parameter_group)
         parameter_model.session_info_model = self._get_active_session_info()
 
-        # TODO: LOAD CALIBRATION FILE
+        if self._calibration_control_panel.calibration_toml_path:
+            parameter_model.session_info_model.calibration_toml_path = self._calibration_control_panel.calibration_toml_path
+        else:
+            parameter_model.session_info_model.calibration_toml_path = self._calibration_control_panel.open_calibration_toml_dialog()
 
         if not parameter_model.session_info_model.calibration_toml_path:
             logger.error("No calibration TOML selected - Processing will fail at 3d step, but will get through 2d data processing")

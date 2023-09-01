@@ -90,11 +90,11 @@ class MainWindow(QMainWindow):
 
         # TODO: Do we need this, what does it accomplish
         # Build UI Widgets
-        # dummy_widget = QWidget()
-        # dummy_widget.setStyleSheet("background-color:red;")
-        # self._layout = QHBoxLayout()
-        # dummy_widget.setLayout(self._layout)
-        # self.setCentralWidget(dummy_widget)
+        dummy_widget = QWidget()
+        dummy_widget.setStyleSheet("background-color:red;")
+        self._layout = QHBoxLayout()
+        dummy_widget.setLayout(self._layout)
+        self.setCentralWidget(dummy_widget)
 
         # CSS Styling
         self._css_file_watcher = self._setup_stylesheet()
@@ -245,7 +245,10 @@ class MainWindow(QMainWindow):
         self._synchronization_widget.generate_video_display(session_info_model.framerate_matched_videos_folder_path)
         self._directory_view_widget.handle_new_active_session_selected()
 
-        # TODO: Update control panel?
+        try:
+            self._process_motion_capture_data_panel.update_calibration_path()
+        except Exception as e:
+            logger.error(e)
 
         update_most_recent_session_toml(session_info_model=session_info_model)
         

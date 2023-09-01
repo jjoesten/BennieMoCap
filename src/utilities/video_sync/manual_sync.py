@@ -25,7 +25,6 @@ def synchronize_videos_manually(
     start_timer = time.time()
 
     video_paths_list = get_video_paths(video_folder=raw_video_folder_path)
-    # TODO: this makes no sense (the if test)
     if synchronized_video_folder_path is None or not synchronized_video_folder_path.exists():
         Path(synchronized_video_folder_path).mkdir(exist_ok=True, parents=True)
     synchronized_video_folder_path = Path(synchronized_video_folder_path)

@@ -155,25 +155,6 @@ class MediapipeSkeletonDetector:
             logger.info(f"The shape of body_world_numCams_numFrames_numTrackedPts_XYZ is {body_world_numCams_numFrames_numTrackedPts_XYZ.shape}")
 
         return data2d_numCams_numFrames_numTrackedPts_XY
-
-
-
-        mediapipe2d_single_camera_npy_array_list = []
-
-        # Original uses multiprocessing pool, but is causing issues, process one video at a time for now
-        video_paths = get_video_paths(video_folder_path)
-        for video_path in video_paths:
-            mediapipe2d_single_camera_npy_array_list.append(
-                self.process_video(
-                    video_file_path=video_path,
-                    output_data_folder_path=output_data_folder_path,
-                    parameter_model=self._parameter_model,
-                    annotate_image=self._annotate_image,
-                    mediapipe_results_list_to_npy_arrays=self._mediapipe_results_list_to_npy_arrays,
-                    use_tqdm=self._use_tqdm
-                )
-            )
-
         
     
     def _save_mediapipe2d_data_to_npy(
