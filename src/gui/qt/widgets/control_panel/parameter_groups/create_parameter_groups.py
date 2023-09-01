@@ -55,6 +55,12 @@ def create_mediapipe_parameter_group(
         type="group",
         children=[
             dict(
+                name="Use Multiprocessing",
+                type="bool",
+                value=parameter_model.use_multiprocessing,
+                tip="Use multiprocessing for data processing, if True videos will be processed in parallel, otherwise sequentially. If you encounter errors processing large videos with multiprocessing, turn the option off."
+            ),
+            dict(
                 name=MEDIAPIPE_MODEL_COMPLEXITY,
                 type="list",
                 limits=mediapipe_model_complexity_list,

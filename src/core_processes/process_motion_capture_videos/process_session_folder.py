@@ -82,7 +82,8 @@ def process_session_folder(
         mediapipe_image_data_numCams_numFrames_numTrackedPts_XYZ = (
             mediapipe_skeleton_detector.process_folder(
                 video_folder_path=session.session_info_model.synchronized_videos_folder_path,
-                output_data_folder_path=session.session_info_model.output_data_folder_path / RAW_DATA_FOLDER_NAME
+                output_data_folder_path=session.session_info_model.output_data_folder_path / RAW_DATA_FOLDER_NAME,
+                use_multiprocessing=session.mediapipe_parameters_model.use_multiprocessing,
             )
         )
 

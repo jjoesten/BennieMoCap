@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from src.data_layer.session_models.session_info_model import SessionInfoModel
 
 class MediapipeParametersModel(BaseModel):
+    use_multiprocessing: bool = False
     mediapipe_model_complexity: int = 2
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5

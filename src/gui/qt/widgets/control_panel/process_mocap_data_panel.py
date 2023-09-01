@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QGroupBox,
     QPushButton,
+    QCheckBox
 )
 from pyqtgraph.parametertree import Parameter, ParameterTree
 
@@ -133,7 +134,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
         parameter_tree.setObjectName("parameter-tree-widget")
         return parameter_group
     
-    def _convert_session_parameter_model_to_parameter_group(self, session_processing_parameter_mode: PostProcessingParameterModel):
+    def _convert_session_parameter_model_to_parameter_group(self, session_processing_parameter_model: PostProcessingParameterModel):
         return Parameter.create(
             name="Processing Parameters",
             type="group",
@@ -143,7 +144,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
                     type="group",
                     children=[
                         self._create_skip_this_step_parameter(skip_step_name=SKIP_2D_IMAGE_TRACKING_NAME),
-                        create_mediapipe_parameter_group(session_processing_parameter_mode.mediapipe_parameters_model),
+                        create_mediapipe_parameter_group(session_processing_parameter_model.mediapipe_parameters_model),
                     ],
                     tip="Methods for tracking 2d points in images (e.g. mediapipe, deeplabcut(TODO), openpose(TODO), etc...)",
                 ),
@@ -152,7 +153,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
                     type="group",
                     children=[
                         self._create_skip_this_step_parameter(skip_step_name=SKIP_3D_TRIANGULATION_NAME),
-                        create_3d_triangulation_parameter_group(session_processing_parameter_mode.anipose_triangulate_3d_parameters_model),
+                        create_3d_triangulation_parameter_group(session_processing_parameter_model.anipose_triangulate_3d_parameters_model),
                     ],
                     tip="Methods for triangulating 3d points from 2d points (using epipolar geometry and the 'camera_calibration' data)."
                 ),
@@ -161,7 +162,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
                     type="group",
                     children=[
                         self._create_skip_this_step_parameter(skip_step_name=SKIP_BUTTERWORTH_FILTER_NAME),
-                        create_post_processing_parameter_group(session_processing_parameter_mode.post_processing_parameters_model)
+                        create_post_processing_parameter_group(session_processing_parameter_model.post_processing_parameters_model)
                     ],
                     tip="Methods for cleaning up the data (e.g. filtering/smoothing, gap filling, etc...)"
                 )

@@ -3,10 +3,11 @@ logger = logging.getLogger(__name__)
 
 from tqdm import tqdm
 from pathlib import Path
-from typing import Optional, Callable, Union, List
+from typing import Optional, Callable, Union, List, Tuple
 import mediapipe as mp
 import numpy as np
 import cv2
+import multiprocessing
 
 from src.data_layer.session_models.post_processing_parameter_models import MediapipeParametersModel
 from src.core_processes.processing_2d.mediapipe.data_models.mediapipe_dataclasses import Mediapipe2dNumpyArrays
@@ -67,26 +68,50 @@ class MediapipeSkeletonDetector:
         self,
         video_folder_path: Union[str, Path],
         output_data_folder_path: Union[str, Path],
-    ):
+        kill_event: multiprocessing.Event = None,
+        use_multiprocessing: bool = False
+    ) -> Union[np.ndarray, None]:
         video_folder_path = Path(video_folder_path)
         logger.info(f"Processing videos in: {video_folder_path}")
 
-        mediapipe2d_single_camera_npy_array_list = []
+        tasks = self._create_video_processing_tasks(output_data_folder_path=output_data_folder_path, video_folder_path=video_folder_path)
 
-        # Original uses multiprocessing pool, but is causing issues, process one video at a time for now
-        video_paths = get_video_paths(video_folder_path)
-        for video_path in video_paths:
-            mediapipe2d_single_camera_npy_array_list.append(
-                self.process_video(
-                    video_file_path=video_path,
-                    output_data_folder_path=output_data_folder_path,
-                    parameter_model=self._parameter_model,
-                    annotate_image=self._annotate_image,
-                    mediapipe_results_list_to_npy_arrays=self._mediapipe_results_list_to_npy_arrays,
-                    use_tqdm=self._use_tqdm
-                )
+        if use_multiprocessing:
+            with multiprocessing.Pool() as pool:
+                mediapipe2d_single_camera_npy_array_list = pool.starmap(self.process_video, tasks)
+        else:
+            mediapipe2d_single_camera_npy_array_list = []
+            for task in tasks:
+                if kill_event is not None:
+                    if kill_event.is_set():
+                        break
+                mediapipe2d_single_camera_npy_array_list.append(self.process_video(*task))
+
+        body_world_numCams_numFrames_numTrackedPts_XYZ, data2d_numCams_numFrames_numTrackedPts_XY = self._build_output_numpy_array(mediapipe2d_single_camera_npy_array_list)
+
+        self._save_mediapipe2d_data_to_npy(
+            data2d_numCams_numFrames_numTrackedPts_XY=data2d_numCams_numFrames_numTrackedPts_XY,
+            body_world_numCams_numFrames_numTrackedPts_XYZ=body_world_numCams_numFrames_numTrackedPts_XYZ,
+            output_data_folder_path=Path(output_data_folder_path)
+        )
+        return data2d_numCams_numFrames_numTrackedPts_XY
+    
+    def _create_video_processing_tasks(self, output_data_folder_path: Union[str, Path], video_folder_path: Union[str, Path]) -> List[Tuple]:
+        video_paths = get_video_paths(video_folder=video_folder_path)
+        tasks = [
+            (
+                video_path,
+                output_data_folder_path,
+                self._parameter_model,
+                self._annotate_image,
+                self._mediapipe_results_list_to_npy_arrays,
+                self._use_tqdm
             )
-
+            for video_path in video_paths
+        ]
+        return tasks
+    
+    def _build_output_numpy_array(mediapipe2d_single_camera_npy_array_list) -> np.ndarray:
         all_cameras_data2d_list = [m2d.all_data2d_nFrames_nTrackedPts_XY for m2d in mediapipe2d_single_camera_npy_array_list]
         all_cameras_pose_world_data_list = [m2d.body_world_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
         all_cameras_right_hand_world_data_list = [m2d.rightHand_frameNumber_trackedPointNumber_XYZ for m2d in mediapipe2d_single_camera_npy_array_list]
@@ -97,6 +122,7 @@ class MediapipeSkeletonDetector:
         number_frames = all_cameras_data2d_list[0].shape[0]
         number_tracked_points = all_cameras_data2d_list[0].shape[1]
         number_spatial_dimensions = all_cameras_data2d_list[0].shape[2]
+        number_body_points = all_cameras_pose_world_data_list[0].shape[1]
 
         data2d_numCams_numFrames_numTrackedPts_XY = np.empty(
             (
@@ -128,13 +154,27 @@ class MediapipeSkeletonDetector:
 
             logger.info(f"The shape of body_world_numCams_numFrames_numTrackedPts_XYZ is {body_world_numCams_numFrames_numTrackedPts_XYZ.shape}")
 
-        self._save_mediapipe2d_data_to_npy(
-            data2d_numCams_numFrames_numTrackedPts_XY=data2d_numCams_numFrames_numTrackedPts_XY,
-            body_world_numCams_numFrames_numTrackedPts_XYZ=body_world_numCams_numFrames_numTrackedPts_XYZ,
-            output_data_folder_path=Path(output_data_folder_path)
-        )
-
         return data2d_numCams_numFrames_numTrackedPts_XY
+
+
+
+        mediapipe2d_single_camera_npy_array_list = []
+
+        # Original uses multiprocessing pool, but is causing issues, process one video at a time for now
+        video_paths = get_video_paths(video_folder_path)
+        for video_path in video_paths:
+            mediapipe2d_single_camera_npy_array_list.append(
+                self.process_video(
+                    video_file_path=video_path,
+                    output_data_folder_path=output_data_folder_path,
+                    parameter_model=self._parameter_model,
+                    annotate_image=self._annotate_image,
+                    mediapipe_results_list_to_npy_arrays=self._mediapipe_results_list_to_npy_arrays,
+                    use_tqdm=self._use_tqdm
+                )
+            )
+
+        
     
     def _save_mediapipe2d_data_to_npy(
         self,
